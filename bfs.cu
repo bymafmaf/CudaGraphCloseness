@@ -1,7 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <omp.h>
 #include <iostream>
 
 #include "graphio.h"
@@ -21,7 +20,8 @@ void usage(){
 const int N = 7;
 const int blocksize = 7;
 
-void call_me_maybe(char* ad, int* bd, const int csize, const int isize, char* a, int* b, int blocksize);
+__global__
+void add(int *da, int *db, int *dc);
 
 
 /*
@@ -47,19 +47,28 @@ int main(int argc, char *argv[]) {
     exit(1);
   }
   /****** YOUR CODE GOES HERE *******/
-  char a[N] = "Hello ";
-  int b[N] = {15, 10, 6, 0, -11, 1, 0};
+  int a, b, c;
+  int *da, *db, *dc;
+  int size = sizeof(int);
 
-  char *ad;
-  int *bd;
-  const int csize = N*sizeof(char);
-  const int isize = N*sizeof(int);
+  cudaMalloc((void **)&da, size);
+  cudaMalloc((void **)&db, size);
+  cudaMalloc((void **)&dc, size);
 
-  printf("%s", a);
-  call_me_maybe(ad, bd, csize, isize, a, b, blocksize);
+  a = 5;
+  b = 10;
+  cudaMemcpy(da, &a, size, cudaMemcpyHostToDevice);
+  cudaMemcpy(db, &b, size, cudaMemcpyHostToDevice);
 
-  printf("%s\n", a);
-  
+  add<<<1,1>>>(da, db, dc);
+
+  cudaMemcpy(&c, dc, size, cudaMemcpyDeviceToHost);
+
+  printf("%d\n", c);
+  cudaFree(da);
+  cudaFree(db);
+  cudaFree(dc);
+
   free(row_ptr);
   free(col_ind);
 
