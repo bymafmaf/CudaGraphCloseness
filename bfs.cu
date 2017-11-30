@@ -14,14 +14,20 @@ void usage(){
   printf("./bfs <filename> <sourceIndex>\n");
   exit(0);
 }
-
+void random_ints(int* a, int N)
+{
+   int i;
+   for (i = 0; i < N; ++i)
+    a[i] = rand();
+}
 // CUDA STARTS
 
-const int N = 7;
-const int blocksize = 7;
+#define N (2048*2048)
+#define M 512
+
 
 __global__
-void add(int *da, int *db, int *dc);
+void run(etype *row_ptr, vtype *col_ind, int nov);
 
 
 /*
@@ -47,27 +53,26 @@ int main(int argc, char *argv[]) {
     exit(1);
   }
   /****** YOUR CODE GOES HERE *******/
-  int a, b, c;
-  int *da, *db, *dc;
-  int size = sizeof(int);
+  etype *d_row_ptr;
+  vtype *d_col_ind;
+  int size = nov * sizeof(int);
 
-  cudaMalloc((void **)&da, size);
-  cudaMalloc((void **)&db, size);
-  cudaMalloc((void **)&dc, size);
+  cudaMalloc((void **)&d_row_ptr, size);
+  cudaMalloc((void **)&d_col_ind, size);
 
-  a = 5;
-  b = 10;
-  cudaMemcpy(da, &a, size, cudaMemcpyHostToDevice);
-  cudaMemcpy(db, &b, size, cudaMemcpyHostToDevice);
+  cudaMemcpy(d_row_ptr, row_ptr, size, cudaMemcpyHostToDevice);
+  cudaMemcpy(d_col_ind, col_ind, size, cudaMemcpyHostToDevice);
 
-  add<<<1,1>>>(da, db, dc);
+  run<<<(N + M - 1)/M, M>>>(d_row_ptr, d_col_ind, nov);
 
-  cudaMemcpy(&c, dc, size, cudaMemcpyDeviceToHost);
+  //cudaMemcpy(c, dc, size, cudaMemcpyDeviceToHost);
 
-  printf("%d\n", c);
-  cudaFree(da);
-  cudaFree(db);
-  cudaFree(dc);
+  // for (size_t i = 0; i < N; i++) {
+  //   cout << c[i] << endl;
+  // }
+  cudaFree(d_row_ptr);
+  cudaFree(d_col_ind);
+  //cudaFree(dc);
 
   free(row_ptr);
   free(col_ind);
